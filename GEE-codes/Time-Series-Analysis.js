@@ -11,7 +11,8 @@
 var geometry = 'evia';
 
 // You can also set the image, based on which the selection of burned areas will be done
-// Currently it is driven by the predefined geometry, i.e. if the geoemtry is set to the pre-selected 
+//  this image should be a binary image of unburned and burned areas (0 and 1 pixel values)
+// Currently it is driven by the predefined geometry, i.e. if the geometry is set to the pre-selected 
 //  option, its corresponding classification result is selected
 var result_img = []
 
