@@ -1,28 +1,37 @@
-var Oly_geometry = 
-    /* color: #d63000 */
-    /* shown: false */
-    ee.Geometry.Polygon(
-        [[[21.458133205617063, 37.74797921043348],
-          [21.458133205617063, 37.600152715543224],
-          [21.91337917729675, 37.600152715543224],
-          [21.91337917729675, 37.74797921043348]]], null, false),
-    evia_geometry = 
-    /* color: #d63000 */
-    /* shown: false */
-    ee.Geometry.Polygon(
-        [[[23.122129452028535, 39.05932301569821],
-          [23.122129452028535, 38.678682048995924],
-          [23.498411190309785, 38.678682048995924],
-          [23.498411190309785, 39.05932301569821]]], null, false),
-    athens_geometry = 
-    /* color: #98ff00 */
-    /* shown: false */
-    ee.Geometry.Polygon(
-        [[[23.74517928446036, 38.23905210135975],
-          [23.74517928446036, 38.086265672591296],
-          [23.90722762430411, 38.086265672591296],
-          [23.90722762430411, 38.23905210135975]]], null, false),
-    olympia_first = /* color: #d63000 */ee.Geometry.Polygon(
+// ------------------------------------------------------
+//                        USER PART
+//                --------------------------
+//  Select an area of interest and set the target dates
+// ------------------------------------------------------
+
+
+// Draw your own geometry and replace the String with that geometry 
+//  or your selected one from the predefined areas
+// Predefined areas: 'evia', 'olympia', 'athens'
+var geometry = 'evia';
+
+// You can also set the image, based on which the selection of burned areas will be done
+// Currently it is driven by the predefined geometry, i.e. if the geoemtry is set to the pre-selected 
+//  option, its corresponding classification result is selected
+var result_img = []
+
+// Set the orbit number for which to do the analysis
+// For Evia and Athens it is 7, for Olympia it is 80
+var orbitNumber = 7; 
+
+
+// Set the target dates - start and end of the fire
+var fireStartDate = '2021-08-03';
+var fireEndDate = '2021-08-19';
+
+
+
+// ------------------------------------------------------
+//          THE ANALYSIS PART
+// ------------------------------------------------------
+
+// Predefined geometries
+var olympia_first = /* color: #d63000 */ee.Geometry.Polygon(
         [[[21.560100063527262, 37.70631845517042],
           [21.580012783253824, 37.67860784469641],
           [21.616404995167887, 37.662302648727426],
@@ -67,29 +76,36 @@ var Oly_geometry =
           [23.39208800553207, 38.10520382358177],
           [23.344022819985195, 38.12573260115973],
           [23.399641106118008, 38.13275427920331]]]),
-    athens_result = ee.Image("users/danielp/IGARSS_2023/S1BAM_IGARSS_results_FINAL_Athens"),
     results_evia = ee.Image("users/danielp/IGARSS_2023/S1BAM_IGARSS_results_FINAL_Evia"),
-    olympia_result = ee.Image("users/danielp/IGARSS_2023/S1BAM_IGARSS_results_FINAL_Olympia");
+    olympia_result = ee.Image("users/danielp/IGARSS_2023/S1BAM_IGARSS_results_FINAL_Olympia"),
+    athens_result = ee.Image("users/danielp/IGARSS_2023/S1BAM_IGARSS_results_FINAL_Athens");
 
-var evia = evia_geometry;
-var olympia = Oly_geometry;
-var athens = ee.FeatureCollection('users/danielp/S1BAM_selected_geometry_athens2').first().geometry();
+// Create image collections from image bands
+var theFunction = require('users/danielp/functions:bandsToImgCollection');
+var evia_r = theFunction.bandsToImgCollection(results_evia).first().rename('result');
+var olympia_r = theFunction.bandsToImgCollection(olympia_result).first().rename('result');
+var athens_r = theFunction.bandsToImgCollection(athens_result).first().rename('result');
 
+Map.addLayer(ee.Image(result_img),{},'Result of the first clustering');
 
-//*******************************************************************************************
-//                            SELECT AN AREA OF INTEREST AND REFENCE POINT
+// if the geoemtry is set to the pre-selected option, select its corresponding classification result
+//  and the reference area
+if (geometry == 'evia') {
+  geometry = evia_first;
+  var result_img = evia_r;
+}
 
-// Set your selected area as geometry
-var geometry = evia;
-var orbitNumber =7; // Evia and Athens 7, Olympia 80
+if (geometry == 'olympia') {
+  geometry = olympia_first;
+  var result_img = olympia_r;
+}
 
-// Select dates
-// var selectedDate = '2021-08-13';
-var fireStartDate = '2021-08-03';
-var fireEndDate = '2021-08-19';
-var startDate = '2021-01-01';
-var endDate = '2021-11-21';
+if (geometry == 'athens') {
+  geometry == athens_first;
+  var result_img = athens_r;
+}
 
+// Center the map to geometry
 Map.centerObject(geometry, 11);
 
 // Load JRC Global Surface Water database for masking out water areas
@@ -99,34 +115,10 @@ var waterMask = JRC.select('occurrence').gt(10).unmask().eq(0).clip(geometry);
 // Load GPM precipitation data
 var GPM = ee.ImageCollection('NASA/GPM_L3/IMERG_V06').select('precipitationCal');
 
-// Create image collections from image bands
-var theFunction = require('users/danielp/functions:bandsToImgCollection');
-var evia_r = theFunction.bandsToImgCollection(results_evia).first().rename('result');
-var olympia_r = theFunction.bandsToImgCollection(olympia_result).first().rename('result');
-var athens_r = theFunction.bandsToImgCollection(athens_result).first().rename('result');
 
-// if the geoemtry is set to the pre-selected option, select its corresponding classification result
-// and the reference area
-if (geometry == evia) {
-  var result_img = evia_r;
-  var randomReference = evia_first;
-}
-
-if (geometry == olympia) {
-  var result_img = olympia_r;
-  var randomReference = olympia_first;
-}
-
-if (geometry == athens) {
-  var result_img = athens_r;
-  var randomReference = athens_first;
-}
-
-Map.addLayer(ee.Image(result_img),{},'Result of the first clustering')
-
-
-//*******************************************************************************************
-//                            CREATE SAR POLARIMETRIC INDICES
+// ------------------------------------------------------
+//            CREATE SAR POLARIMETRIC INDICES
+// ------------------------------------------------------
 
 // convert power units to dB
 var indices_then_powerToDb = function powerToDb (img){
@@ -149,6 +141,14 @@ var addPrecipitation = function addPrecipitation(img) {
   return img.addBands([filteredPrecipitation.clip(geometry)]).copyProperties(img,img.propertyNames())
 }
 
+
+var images = ee.ImageCollection('COPERNICUS/S1_GRD_FLOAT')
+              .filterBounds(geometry)
+              .filterDate(ee.Date(fireStartDate).advance(-2,'month'),ee.Date(fireEndDate).advance(2,'month'))
+              .filter(ee.Filter.eq('relativeOrbitNumber_start',orbitNumber))
+              .map(indices_then_powerToDb)
+              .map(addPrecipitation)
+
 // Make mosaics from overlapping tiles
 var theFunction = require('users/danielp/functions:makeMosaicsFromOverlappingTiles_function');
 
@@ -156,7 +156,7 @@ var theFunction = require('users/danielp/functions:makeMosaicsFromOverlappingTil
 var images = theFunction.makeMosaicsFromOverlappingTiles(images,geometry);
 
 // generate 500 random points
-var randomPoints = ee.FeatureCollection.randomPoints(randomReference, 500);
+var randomPoints = ee.FeatureCollection.randomPoints(geometry, 500);
 
 // create buffer around these random points
 var buffered = randomPoints.map(function(feature) {
@@ -292,7 +292,6 @@ var RVIchart = ui.Chart.feature
   });
 
 print('RVI mean with 25th and 75th percentiles', RVIchart);
-
 
 // Export time series as CSV
 Export.table.toDrive({collection:TS, description: 'Exported time series'});
