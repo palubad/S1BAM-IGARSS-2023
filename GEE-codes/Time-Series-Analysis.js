@@ -246,15 +246,41 @@ var TS = calculatedPoints.map(function(fCollection){
 
 TS = TS.filter(ee.Filter.notNull(['VH_mean_Burned'])).sort('time')
 
+
+// Print the number of burned areas included in the analysis
 print('Number of burned areas included in the analysis',TS.aggregate_mean('NumberOfBurnedAreas'))
 
-// Define the chart and print it to the console.
-var chart_with_all = ui.Chart.feature
+
+// ------------------------------------------------------
+//                      CREATE CHARTS
+// ------------------------------------------------------
+
+// Define the charts and print them to the console
+var VV_VH_chart = ui.Chart.feature
                 .byFeature({
                   features: TS,
                   yProperties : [
-                    'VH_p75_Burned','VH_p25_Burned','VH_mean_Burned', 'VV_p75_Burned','VV_p25_Burned','VV_mean_Burned',
-                  'precipitation',
+                    'VH_p75_Burned','VH_p25_Burned','VH_mean_Burned', 
+                    'VV_p75_Burned','VV_p25_Burned','VV_mean_Burned',
+                  ],
+                  xProperty : 'date'
+                })
+                .setChartType('ScatterChart')
+                .setOptions({lineSize:1,pointSize: 0,interpolateNulls: true,curveType: 'function',
+                  series: {
+    0: {lineWidth: 2, color: 'E37D05', pointSize: 0, lineDashStyle: [4, 4]},
+    1: {lineWidth: 2, color: 'E37D05', lineDashStyle: [4, 4]},
+    3: {lineWidth: 0.5, color: '#add8e6', pointSize: 0, lineDashStyle: [4, 4]},
+    4: {lineWidth: 0.5, color: '#add8e6', lineDashStyle: [4, 4]},
+  }
+  });
+  
+print('VV & VH chart', VV_VH_chart);
+
+var pol_index_chart = ui.Chart.feature
+                .byFeature({
+                  features: TS,
+                  yProperties : [
                   'RVI_p75_Burned','RVI_p25_Burned','RVI_mean_Burned',
                   'RFDI_p75_Burned','RFDI_p25_Burned', 'RFDI_mean_Burned'
                   ],
@@ -264,34 +290,33 @@ var chart_with_all = ui.Chart.feature
                 .setOptions({lineSize:1,pointSize: 0,interpolateNulls: true,curveType: 'function',
                   series: {
     0: {lineWidth: 2, color: 'E37D05', pointSize: 0, lineDashStyle: [4, 4]},
-    1: {lineWidth: 2, color: '#add8e6', lineDashStyle: [4, 4]},
+    1: {lineWidth: 2, color: 'E37D05', lineDashStyle: [4, 4]},
     3: {lineWidth: 0.5, color: '#add8e6', pointSize: 0, lineDashStyle: [4, 4]},
     4: {lineWidth: 0.5, color: '#add8e6', lineDashStyle: [4, 4]},
   }
   });
 
-print('Chart with all variables (good for export)', chart_with_all);
+print('RVI & RFDI chart', pol_index_chart);
 
-// Define the chart and print it to the console.
-var RVIchart = ui.Chart.feature
+var precipitation_chart = ui.Chart.feature
                 .byFeature({
                   features: TS,
-                  yProperties : ['RVI_p75_Burned','RVI_p25_Burned','RVI_mean_Burned',
+                  yProperties : [
+                  'precipitation'
                   ],
                   xProperty : 'date'
                 })
                 .setChartType('ScatterChart')
                 .setOptions({lineSize:1,pointSize: 0,interpolateNulls: true,curveType: 'function',
-                title: 'RVI mean with 25th and 75th percentiles',
                   series: {
-    0: {lineWidth: 0.5, color: 'E37D05', pointSize: 0, lineDashStyle: [4, 4]},
-    1: {lineWidth: 0.5, color: 'E37D05', lineDashStyle: [4, 4]},
+    0: {lineWidth: 2, color: 'E37D05', pointSize: 0, lineDashStyle: [4, 4]},
+    1: {lineWidth: 2, color: 'E37D05', lineDashStyle: [4, 4]},
     3: {lineWidth: 0.5, color: '#add8e6', pointSize: 0, lineDashStyle: [4, 4]},
     4: {lineWidth: 0.5, color: '#add8e6', lineDashStyle: [4, 4]},
   }
   });
 
-print('RVI mean with 25th and 75th percentiles', RVIchart);
+print('Precipitation chart', precipitation_chart);
 
 // Export time series as CSV
 Export.table.toDrive({collection:TS, description: 'Exported time series'});
