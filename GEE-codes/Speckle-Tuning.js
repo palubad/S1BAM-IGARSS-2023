@@ -58,29 +58,27 @@ var postfire_end = '2021-08-27';
 //============================================================
 
 // Predefined geometries
-var evia = 
-    /* color: #d63000 */
-    /* shown: false */
-    ee.Geometry.Polygon(
+var evia = ee.Geometry.Polygon(
         [[[23.122129452028535, 39.05932301569821],
           [23.122129452028535, 38.678682048995924],
           [23.498411190309785, 38.678682048995924],
           [23.498411190309785, 39.05932301569821]]], null, false),
     
-    olympia = 
-    /* color: #d63000 */
-    /* shown: false */
-    ee.Geometry.Polygon(
+    olympia = ee.Geometry.Polygon(
         [[[21.458133205617063, 37.74797921043348],
           [21.458133205617063, 37.600152715543224],
           [21.91337917729675, 37.600152715543224],
           [21.91337917729675, 37.74797921043348]]], null, false);
 
-var athens = ee.FeatureCollection('users/danielp/S1BAM_selected_geometry_athens2').first().geometry();
+var athens = ee.Geometry.Polygon(
+        [[[23.232708909670883, 38.201434900967364],
+          [23.232708909670883, 38.04721776511313],
+          [23.459130265872055, 38.04721776511313],
+          [23.459130265872055, 38.201434900967364]]], null, false);
 
 // Predefined dates
-if (ee.String(geometry) == 'athens') {
-  var geometry = athens;
+if (geometry == 'athens') {
+  geometry = athens;
   // For Sentinel-1 SAR data
   var selectedDate = '2021-08-24';
   var fireStartDate = '2021-08-16';
@@ -94,8 +92,8 @@ if (ee.String(geometry) == 'athens') {
   var postfire_start = '2021-08-26';
   var postfire_end = '2021-08-27';
 }
-if (ee.String(geometry) == 'olympia') {
-  var geometry = olympia;
+if (geometry == 'olympia') {
+  geometry = olympia;
   // For Sentinel-1 SAR data
   var selectedDate = '2021-08-17';
   var fireStartDate = '2021-08-04';
@@ -109,8 +107,8 @@ if (ee.String(geometry) == 'olympia') {
   var postfire_start = '2021-08-16';
   var postfire_end = '2021-08-19';
 }
-if (ee.String(geometry) == 'evia') {
-  var geometry = evia;
+if (geometry == 'evia') {
+  geometry = evia;
   // For Sentinel-1 SAR data
   var selectedDate = '2021-08-18';
   var fireStartDate = '2021-08-03';
@@ -126,7 +124,8 @@ if (ee.String(geometry) == 'evia') {
 }
 
 // Add the predefined geometry to the map
-Map.addLayer(geometry, {}, 'Selected geometry');
+print(geometry)
+Map.addLayer(athens, {}, 'Selected geometry');
 
 // calculations
 var connected = ee.Number(post_filter_size).multiply(10000).divide(400);
@@ -199,15 +198,30 @@ var s1 = ee.ImageCollection('COPERNICUS/S1_GRD_FLOAT')
 
 print('Available S-1 images', s1);
 
+
 // call the prepared function to merge overlapping images over the ROI
 var theFunction = require('users/danielp/functions:makeMosaicsFromOverlappingTiles_function');
-
 // apply the function
 var finalCollection = theFunction.makeMosaicsFromOverlappingTiles(s1,geometry);
 
 
-// filters adopted from https://github.com/adugnag/gee_s1_ard/blob/main/javascript/speckle_filter.js
-var refinedLee = function(image) {
+
+var SpeckleTuning = function(speckle_filter){
+  var KERNEL_SIZE = kernel_sizes
+  
+  
+  // var KERNEL_SIZE = 11
+  // var filter = [50,100,150,200]
+  
+  
+  // var filter = 150
+  // var results = filter.map(function(filter) {
+  var results = KERNEL_SIZE.map(function(KERNEL_SIZE) {
+
+  // KERNEL_SIZE = ee.Number.parse(KERNEL_SIZE);
+  
+  // filters adopted from https://github.com/adugnag/gee_s1_ard/blob/main/javascript/speckle_filter.js
+var refinedLee = function (image) {
 //---------------------------------------------------------------------------//
 // Refined Lee filter 
 //---------------------------------------------------------------------------//
@@ -502,35 +516,22 @@ var leefilter = function(image) {
         return image.addBands(output, null, true);
   }   
 
-var SpeckleTuning = function(speckle_filter){
-  var KERNEL_SIZE = kernel_sizes
   
+  // Speckle filter selection
+  // var speckleFilter = leefilter
   
-  // var KERNEL_SIZE = 11
-  // var filter = [50,100,150,200]
-  
-  
-  var filter = 150
-  // var results = filter.map(function(filter) {
-  var results = KERNEL_SIZE.map(function(KERNEL_SIZE) {
-
-  // KERNEL_SIZE = ee.Number.parse(KERNEL_SIZE);
-  
-// Speckle filter selection
-// var speckleFilter = leefilter
-
-if (ee.String(speckle_filter) == 'leefilter') {
-  var speckleFilter = leefilter;
-}
-if (ee.String(speckle_filter) == 'leesigma') {
-  var speckleFilter = leesigma;
-}
-if (ee.String(speckle_filter) == 'gammamap') {
-  var speckleFilter = gammamap;
-}
-if (ee.String(speckle_filter) == 'refinedLee') {
-  var speckleFilter = refinedLee;
-}
+  if (speckle_filter == 'leefilter') {
+    var speckleFilter = leefilter;
+  }
+  if (speckle_filter == 'leesigma') {
+    var speckleFilter = leesigma;
+  }
+  if (speckle_filter == 'gammamap') {
+    var speckleFilter = gammamap;
+  }
+  if (speckle_filter == 'refinedLee') {
+    var speckleFilter = refinedLee;
+  }
 
 // Add indices and use speckle filter
 var S1Collection = ee.ImageCollection(finalCollection)
@@ -713,7 +714,7 @@ var imagePreparation = function (img) {
   var unsup_results = classification(selected_image);
   
   
-  return unsup_results.eq(0).unmask().rename(ee.String(speckle_filter).cat(ee.String('_postFilter_')).cat(ee.String(ee.Number(filter).format())));
+  return unsup_results.eq(0).unmask().rename(ee.String(speckle_filter).cat(ee.String('_postFilter_')).cat(ee.String(ee.Number(post_filter_size).format())));
   
   });
   return results;
