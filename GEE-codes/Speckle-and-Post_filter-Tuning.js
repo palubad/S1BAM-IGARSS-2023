@@ -1,4 +1,64 @@
-var geometry8 = 
+//============================================================
+//                ***********************
+//                      USER PART
+//                ***********************
+//============================================================
+//  Select the area of interest, speckle filters and its
+//   window sizes to test, post-filter and polarization
+//============================================================
+
+// Set your selected area as geometry [String] for predefined or ee.Geometry object for your own data
+//  predefined strings: 'athens', 'olympia', 'evia'
+var geometry = 'athens';
+
+// Select speckle filter to test [String]
+// available options: 'leefilter', 'refinedLee', 'leesigma', 'gammamap'
+var speckleList = ['leefilter', 'refinedLee', 'leesigma', 'gammamap'];
+
+// Select speckle filter widonw kernel sizes [Integers, e.g. 3,5,7,9, etc.]
+var kernel_sizes = [3,5,7,9,11,13,15];
+
+// Set the size of post-classification filter to use (in hectares) [Integer]
+var post_filter_size = 2;
+
+// Set the CRS in EPSG [String]
+var crs = 'EPSG:32634';
+
+// Select polarization filter [String]
+// available options: 'ALL', 'VH', 'VV'
+var pol_filter = 'VH';
+
+
+//============================================================
+//                     SET THE TIME FRAME
+//============================================================
+
+// For Sentinel-1 SAR data
+//  selectedDate: selected for the analysis - based on least cloud cover and temporal proximity to a Sentinel-2 acquisition
+var selectedDate = '2021-08-24';
+var fireStartDate = '2021-08-16';
+var fireEndDate = '2021-08-25';
+var startDate = '2021-01-01';
+
+// For Sentinel-2 pre-fire image (least cloud coverage)
+var prefire_start = '2021-08-15';   
+var prefire_end = '2021-08-17';
+
+// For Sentinel-2 post-fire image (least cloud coverage and proximity to a Sentinel-2 acquisition)
+var postfire_start = '2021-08-26';
+var postfire_end = '2021-08-27';
+
+
+
+
+//============================================================
+//                ***********************
+//                     ANALYSIS PART
+//                ***********************
+//============================================================
+
+// Predefined geometries
+var evia = 
     /* color: #d63000 */
     /* shown: false */
     ee.Geometry.Polygon(
@@ -6,7 +66,8 @@ var geometry8 =
           [23.122129452028535, 38.678682048995924],
           [23.498411190309785, 38.678682048995924],
           [23.498411190309785, 39.05932301569821]]], null, false),
-    geometry9 = 
+    
+    olympia = 
     /* color: #d63000 */
     /* shown: false */
     ee.Geometry.Polygon(
@@ -15,73 +76,66 @@ var geometry8 =
           [21.91337917729675, 37.600152715543224],
           [21.91337917729675, 37.74797921043348]]], null, false);
 
-var Oly_geometry = geometry9,
-    evia_geometry = geometry8;
-
-// var athens = athens_geometry;
-var evia = evia_geometry;
-var olympia = Oly_geometry;
 var athens = ee.FeatureCollection('users/danielp/S1BAM_selected_geometry_athens2').first().geometry();
 
-//*******************************************************************************************
-//                            SELECT AN AREA OF INTEREST AND REFENCE POINT
+// Predefined dates
+if (ee.String(geometry) == 'athens') {
+  var geometry = athens;
+  // For Sentinel-1 SAR data
+  var selectedDate = '2021-08-24';
+  var fireStartDate = '2021-08-16';
+  var fireEndDate = '2021-08-25';
+  var startDate = '2021-01-01';
+  
+  // For Sentinel-2 optical data
+  var prefire_start = '2021-08-15';   
+  var prefire_end = '2021-08-17';
+  // Now set the same parameters S2 post-fire image
+  var postfire_start = '2021-08-26';
+  var postfire_end = '2021-08-27';
+}
+if (ee.String(geometry) == 'olympia') {
+  var geometry = olympia;
+  // For Sentinel-1 SAR data
+  var selectedDate = '2021-08-17';
+  var fireStartDate = '2021-08-04';
+  var fireEndDate = '2021-08-19';
+  var startDate = '2021-01-01';
+  
+  // For Sentinel-2 optical data
+  var prefire_start = '2021-08-20';   
+  var prefire_end = '2021-08-30'; 
+  // Now set the same parameters S2 post-fire image
+  var postfire_start = '2021-08-16';
+  var postfire_end = '2021-08-19';
+}
+if (ee.String(geometry) == 'evia') {
+  var geometry = evia;
+  // For Sentinel-1 SAR data
+  var selectedDate = '2021-08-18';
+  var fireStartDate = '2021-08-03';
+  var fireEndDate = '2021-08-19';
+  var startDate = '2021-01-01';
+  
+  // For Sentinel-2 optical data
+  var prefire_start = '2021-08-20';   
+  var prefire_end = '2021-08-30';
+  // Now set the same parameters S2 post-fire image
+  var postfire_start = '2021-08-18';
+  var postfire_end = '2021-08-19';
+}
 
-// Set your selected area as geometry
-var geometry = athens;
-
-// Set the CRS in EPSG
-var crs = 'EPSG:32634';
-
-// var reference = reference_evia;
-
-// Select speckle filter to apply [String]
-// available options: 'leefilter', 'refinedLee', 'leesigma', 'gammamap'
-// var speckle_filter = 'leefilter';
-
-// Select speckle filter kernel size [Integer, e.g. 3,5,7,9, etc.]
-// var KERNEL_SIZE = 9;
-
-// Select polarization filter [String]
-// available options: 'ALL', 'VH', 'VV'
-var pol_filter = 'VH';
-
-//*******************************************************************************************
-//                                     SET TIME FRAME
-
-// Sentinel-2 optical data
-var prefire_start = '2021-08-15';   
-var prefire_end = '2021-08-17';
-// for other regions it was var prefire_start = '2021-07-20';  var prefire_end = '2021-07-30'; 
-// for athens2 var prefire_start = '2021-08-15';  var prefire_end = '2021-08-17'; 
-
-// Now set the same parameters for AFTER the fire.
-var postfire_start = '2021-08-26';
-var postfire_end = '2021-08-27';
-// for athens2 var postfire_start = '2021-08-26';  postfire_end = '2021-08-27'; 
-// for others = '2021-08-16' -- '2021-08-19'
-// for evia postfire_start = '2021-08-18' !!!
-
-// Sentinel-1 SAR data
-// Select dates
-var selectedDate = '2021-08-24';
-var fireStartDate = '2021-08-16';
-var fireEndDate = '2021-08-25';
-var startDate = '2021-01-01';
-
-// athens2 -- selected = 08-24, start = 08-16, end = 08-25
-// others -- start = 08-03, end = 08-19
-// selected olympia = 08-17, evia = 08-18, athens = 08-13
+// Add the predefined geometry to the map
+Map.addLayer(geometry, {}, 'Selected geometry');
 
 // calculations
-var connected = ee.Number(5).multiply(10000).divide(400);
-var focalSize = ee.Number(5).multiply(10000).multiply(2).pow(0.5).divide(2);
-print(connected,focalSize)
+var connected = ee.Number(post_filter_size).multiply(10000).divide(400);
+var focalSize = ee.Number(post_filter_size).multiply(10000).multiply(2).pow(0.5).divide(2);
+var unit = "meters";
+
+print(connected,focalSize);
 
   // Post Filter Settings
-  var connected = 25,
-      focalSize = 71,
-      unit = "meters";
-    
   // connected                     13 = 0.5 ha,   25 = 1 ha,    50 = 2ha,   125 = 5ha,   250 for 10ha
   // focalSize = 2xconnected area. 50 for 0.5 ha, 71 for 1 ha, 100 for 2ha, 160 for 5ha, 224 for 10ha
 
@@ -152,25 +206,6 @@ var theFunction = require('users/danielp/functions:makeMosaicsFromOverlappingTil
 var finalCollection = theFunction.makeMosaicsFromOverlappingTiles(s1,geometry);
 
 
-
-var speckleList = ['leefilter',
-//'leesigma','gammamap','refinedLee', 'leefilter', 'medianfilter'
-];
-
-var SpeckleTuning = function(speckle_filter){
-  var KERNEL_SIZE = [3,5,7,9,11,13,15]
-  
-  
-  // var KERNEL_SIZE = 11
-  // var filter = [50,100,150,200]
-  
-  
-  var filter = 150
-  // var results = filter.map(function(filter) {
-  var results = KERNEL_SIZE.map(function(KERNEL_SIZE) {
-    
-    
-  // KERNEL_SIZE = ee.Number.parse(KERNEL_SIZE);
 // filters adopted from https://github.com/adugnag/gee_s1_ard/blob/main/javascript/speckle_filter.js
 var refinedLee = function(image) {
 //---------------------------------------------------------------------------//
@@ -467,32 +502,39 @@ var leefilter = function(image) {
         return image.addBands(output, null, true);
   }   
 
-var medianfilter = function(image){
-  var modal = image.focalMedian(KERNEL_SIZE/2, "square", "pixels");
-  return image.addBands(modal, null, true);
-}
+var SpeckleTuning = function(speckle_filter){
+  var KERNEL_SIZE = kernel_sizes
+  
+  
+  // var KERNEL_SIZE = 11
+  // var filter = [50,100,150,200]
+  
+  
+  var filter = 150
+  // var results = filter.map(function(filter) {
+  var results = KERNEL_SIZE.map(function(KERNEL_SIZE) {
 
-
+  // KERNEL_SIZE = ee.Number.parse(KERNEL_SIZE);
+  
 // Speckle filter selection
-var speckleFilter = leefilter
+// var speckleFilter = leefilter
 
-// if (ee.String(speckle_filter) == 'leefilter') {
-//   var speckleFilter = leefilter;
-// }
-// if (ee.String(speckle_filter) == 'leesigma') {
-//   var speckleFilter = leesigma;
-// }
-// if (ee.String(speckle_filter) == 'gammamap') {
-//   var speckleFilter = gammamap;
-// }
-// if (ee.String(speckle_filter) == 'refinedLee') {
-//   var speckleFilter = refinedLee;
-// }
+if (ee.String(speckle_filter) == 'leefilter') {
+  var speckleFilter = leefilter;
+}
+if (ee.String(speckle_filter) == 'leesigma') {
+  var speckleFilter = leesigma;
+}
+if (ee.String(speckle_filter) == 'gammamap') {
+  var speckleFilter = gammamap;
+}
+if (ee.String(speckle_filter) == 'refinedLee') {
+  var speckleFilter = refinedLee;
+}
 
 // Add indices and use speckle filter
 var S1Collection = ee.ImageCollection(finalCollection)
                     .map(speckleFilter)
-                    // .map(speckleFilter)
                     .map(indices).sort('system:time_start');
 
 // prepare the post-fire image collection
@@ -543,7 +585,6 @@ var imagePreparation = function (img) {
                         .filter(ee.Filter.eq('platform_number', satellite))
                         .filter(ee.Filter.eq('relativeOrbitNumber_start', path))
                         .filter(ee.Filter.eq('orbitProperties_pass', orbit))
-                        // .map(refinedLee)
                         .map(powerToDb);
 
   // create median composite from images acquired one month before fire started
@@ -574,111 +615,109 @@ var imagePreparation = function (img) {
                               // diffRatio.rename('diffRatio')
                               kmap_VH.rename('kmap_VH'),
                               // variance.select('VH_variance').rename('VH_variance'),
-                              logRatio_VH.rename('logRatio_VH')
+                              logRatio_VH.rename('logRatio_VH'),
                               // stdDev.select('VH_stdDev').rename('stdDev_VH'), 
                               // median.select('VH_median').rename('median_VH'),
                               // logRatio_VV.rename('logRatio_VV'),
                               // stdDev.select('VV_stdDev').rename('stdDev_VV'),
                               // median.select('VV_median').rename('median_VV'),
                               // kmap_VV.rename('kmap_VV')
-                              // diffRatio.rename('diffRFDI')
+                              diffRatio.rename('diffRFDI')
                               ).updateMask(waterMask);
   
-  // // select indices to use
-  // if (pol_filter == 'VH') {
-  //   pol_filter = ee.Filter.or(
-  //                   ee.Filter.stringContains('item','VH'),
-  //                   ee.Filter.stringContains('item','RVI'),
-  //                   ee.Filter.stringContains('item','Ratio')
-  //                   );
-  // }
+  // select indices to use
+  if (pol_filter == 'VH') {
+    pol_filter = ee.Filter.or(
+                    ee.Filter.stringContains('item','VH'),
+                    ee.Filter.stringContains('item','RVI'),
+                    ee.Filter.stringContains('item','RFDI')
+                    );
+  }
   
-  // if (pol_filter == 'VV') {
-  //   pol_filter = ee.Filter.or(
-  //                     ee.Filter.stringContains('item','VV'),
-  //                     ee.Filter.stringContains('item','RVI'),
-  //                   ee.Filter.stringContains('item','Ratio')
-  //                   );
-  // }
+  if (pol_filter == 'VV') {
+    pol_filter = ee.Filter.or(
+                      ee.Filter.stringContains('item','VV'),
+                      ee.Filter.stringContains('item','RVI'),
+                    ee.Filter.stringContains('item','RFDI')
+                    );
+  }
   
-  // if (pol_filter == 'ALL') {
-  //   pol_filter = ee.Filter.or(
-  //                     ee.Filter.stringContains('item','VH'),
-  //                     ee.Filter.stringContains('item','RVI'),
-  //                     ee.Filter.stringContains('item','VV'),
-  //                   ee.Filter.stringContains('item','Ratio')
-  //                   );
-  // }
+  if (pol_filter == 'ALL') {
+    pol_filter = ee.Filter.or(
+                      ee.Filter.stringContains('item','VH'),
+                      ee.Filter.stringContains('item','RVI'),
+                      ee.Filter.stringContains('item','VV'),
+                    ee.Filter.stringContains('item','RFDI')
+                    );
+  }
   
-  // var pol_selection = forClass.bandNames().filter(pol_filter);
+  var pol_selection = forClass.bandNames().filter(pol_filter);
                     
-  // forClass = forClass.select(ee.List(pol_selection));
+  forClass = forClass.select(ee.List(pol_selection));
 
   return forClass.set('system:time_start',img.get('system:time_start'))
                   .set('system:index',img.get('system:index'));
   
-};
-
-var classification = function (img) {
+  };
   
-  var training = img.sample({
-    region: geometry,
-    scale: 20,
-    numPixels: 10000,
-    seed: 0,
-    tileScale: 16
+  var classification = function (img) {
+  
+    // Train with 10 000 pixels
+    var training = img.sample({
+      region: geometry,
+      scale: 20,
+      numPixels: 10000,
+      seed: 0,
+      tileScale: 16
+    });
+  
+    // K-means with farthest first initialisation
+    var clusterer = ee.Clusterer.wekaKMeans({
+                    nClusters: 2,
+                    distanceFunction: 'Manhattan',
+                    init: 3,
+                    }).train(training);
+                
+    // Cluster the input using the trained clusterer.
+    var clusterResult = img.cluster(clusterer);
+    
+    // Generate the mode value from the reference region and convert it to ee.Number
+    var mode_fromRegion = clusterResult.reduceRegion({
+            geometry: geometry,
+            reducer: ee.Reducer.mode(),
+            scale: 20,
+            tileScale: 16
+          });
+  
+    // Set fire cluster where the most common value (mode) was found
+    var fire_cluster = ee.Number.parse(mode_fromRegion.get("cluster"));
+    
+    
+    // Select cluster corresponding to the fire event
+    var binaryCluster = clusterResult.eq(fire_cluster).rename([img.get('system:index')]);
+  
+    var postFiltered = postFilter(binaryCluster)
+  
+    return binaryCluster.set('system:index',img.get('system:index'));
+  };
+  
+  
+  
+  var preparedImages = post_fire_images.sort('system:time_start')
+                        .map(imagePreparation);
+  
+  var selected_image = preparedImages.filterDate(selectedDate,ee.Date(selectedDate).advance(1,'day')).sort('system:time_start',true).first();
+  
+  
+  // Apply classifications for each image
+  var unsup_results = classification(selected_image);
+  
+  
+  return unsup_results.eq(0).unmask().rename(ee.String(speckle_filter).cat(ee.String('_postFilter_')).cat(ee.String(ee.Number(filter).format())));
+  
   });
-
-  // K-means++
-  var clusterer = ee.Clusterer.wekaKMeans({
-                  nClusters: 2,
-                  distanceFunction: 'Manhattan',
-                  init: 3,
-                  }).train(training);
-              
-  // Cluster the input using the trained clusterer.
-  var clusterResult = img.cluster(clusterer);
-  
-  // Generate the mode value from the reference region and convert it to ee.Number
-  // *** reference region = region, where the majority of area is highly burned
-  var mode_fromRegion = clusterResult.reduceRegion({
-          geometry: geometry,
-          reducer: ee.Reducer.mode(),
-          scale: 20,
-          tileScale: 16
-        });
-  
-  var fire_cluster = ee.Number.parse(mode_fromRegion.get("cluster"));
-  
-  
-  // Select cluster corresponding to the fire event
-  var binaryCluster = clusterResult.eq(fire_cluster).rename([img.get('system:index')]);
-
-  var postFiltered = postFilter(binaryCluster)
-
-  return binaryCluster.set('system:index',img.get('system:index'));
+  return results;
 };
-
-
-
-var preparedImages = post_fire_images.sort('system:time_start')
-                      .map(imagePreparation);
-
-var selected_image = preparedImages.filterDate(selectedDate,ee.Date(selectedDate).advance(1,'day')).sort('system:time_start',true).first();
-
-// print('Selected image:',selected_image);
-
-// Apply classifications for each image
-var unsup_results = classification(selected_image);
-
-// print('result',unsup_results);
-
-
-return unsup_results.eq(0).unmask().rename(ee.String(speckle_filter).cat(ee.String('_postFilter_')).cat(ee.String(ee.Number(filter).format())))
-
-})
-return results
-}
 
 var final = speckleList.map(SpeckleTuning);
 
@@ -728,13 +767,6 @@ Map.addLayer(ee.ImageCollection("COPERNICUS/S2_SR")
 {min:0, max:3000, bands:['B4','B3', 'B2']}, 
 'sa')
 
-print(ee.String('Fire incident occurred between ').cat(prefire_end).cat(' and ').cat(postfire_end));
-
-// Location
-//var area = ee.FeatureCollection(geometry);
-
-// Set study area as map center.
-Map.centerObject(area);
 
 //*******************************************************************************************
 //                            DEFINE FUNCTIONS FOR CLOUD MASKING
@@ -746,7 +778,6 @@ var CLD_PRJ_DIST = 1
 var BUFFER = 50
 
 
-
 function add_cloud_bands(img) {
     // # Get s2cloudless image, subset the probability band.
     var cld_prb = ee.Image(img.get('s2cloudless')).select('probability')
@@ -756,7 +787,6 @@ function add_cloud_bands(img) {
 
     // # Add the cloud probability layer and cloud mask as image bands.
     return img.addBands(ee.Image([cld_prb, is_cloud]))
-    
 }
 
 
@@ -937,10 +967,6 @@ var waterMask = JRC.select('occurrence').gt(10).unmask().eq(0);
                            
   )                         
 
-
-
-  
-  
   var last_pre = prefireImCol.limit(1, 'system:time_start',false).first()
   var last_date_pre = ee.String(last_pre.get('system:index')).slice(0, 8)
   var last_pre_date = ee.Date.parse('YYYYMMdd', last_date_pre);
@@ -1045,27 +1071,18 @@ var vis = {bands: ['B4', 'B3', 'B2'], max: 2000, gamma: 1.5};
 var filtered = dates.map(fun);
 print(filtered)
 
-print(ee.Image(ee.List(filtered.get(0))))
-// Map.addLayer(exported,{min: -1, max: 1, palette: grey},'exported'+id)
-Map.addLayer(ee.Image(ee.List(filtered.get(0)))//.gt(0).unmask()
-)
+Map.addLayer(ee.Image(ee.List(filtered.get(0))));
 
-var validation = ee.Image(ee.List(filtered.get(0))).gt(0).unmask()
+var validation = ee.Image(ee.List(filtered.get(0))).gt(0).unmask();
 
 
 // updated image with majority filter where patch size is small
 var final2 = postFilter(validation);
 
-var finalImage = validation//.gt(0)
-Map.addLayer(finalImage.clip(geometry.buffer(-200)), {},'DNBR')
+var finalImage = validation;
+Map.addLayer(finalImage.clip(geometry.buffer(-200)), {},'DNBR');
 
-// Export.image.toDrive({image:finalImage, scale: 20, crs: 'EPSG:32634', folder: 'Reference_images', 
-//                       region:area, description: '_DNBR_150', maxPixels:10e9});
-
-// Export.image.toAsset({image:ee.Image(ee.List(filtered.get(0))), description:"S2_Athens_13_08_2022", scale: 10, crs: 'EPSG:32634', 
-//                       region:area, description: 'S2_Athens_13_08_2022', maxPixels:10e9});
-
-var S1_S2 = oneImage.addBands(finalImage.rename('S2_DNBR'))
+var S1_S2 = oneImage.addBands(finalImage.rename('S2_DNBR'));
 
 Export.image.toDrive({image: ee.Image(S1_S2).updateMask(waterMask).clip(geometry.buffer(-200)).toFloat(), 
                       description: "SpeckleTuningTests", 
@@ -1073,4 +1090,4 @@ Export.image.toDrive({image: ee.Image(S1_S2).updateMask(waterMask).clip(geometry
                       region: geometry,
                       scale: 20,
                       crs: crs,
-                      maxPixels: 10e9})
+                      maxPixels: 10e9});
