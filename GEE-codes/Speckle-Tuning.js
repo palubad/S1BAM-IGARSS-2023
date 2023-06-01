@@ -9,16 +9,18 @@
 
 // Set your selected area as geometry [String] for predefined or ee.Geometry object for your own data
 //  predefined strings: 'athens', 'olympia', 'evia'
-var geometry = 'athens';
+var geometry = 'evia';
 
 // Select speckle filter to test [String]
 // available options: 'leefilter', 'refinedLee', 'leesigma', 'gammamap'
-var speckleList = ['leefilter', 'refinedLee', 'leesigma', 'gammamap'];
+var speckleList = ['refinedLee'];
 
 // Select speckle filter widonw kernel sizes [Integers, e.g. 3,5,7,9, etc.]
 var kernel_sizes = [3,5,7,9,11,13,15];
 
-// Set the size of post-classification filter to use (in hectares) [Integer]
+// Decide if do post-filtering of the results. Options: 'yes' or 'no'
+var do_post_filtering = 'yes';
+// If yes, set the size of post-classification filter to use (in hectares) [Integer], otherwise set the default value
 var post_filter_size = 2;
 
 // Set the CRS in EPSG [String]
@@ -697,10 +699,20 @@ var imagePreparation = function (img) {
     
     // Select cluster corresponding to the fire event
     var binaryCluster = clusterResult.eq(fire_cluster).rename([img.get('system:index')]);
-  
-    var postFiltered = postFilter(binaryCluster)
-  
-    return binaryCluster.set('system:index',img.get('system:index'));
+    
+    // apply post filter
+    var postFiltered = postFilter(binaryCluster);
+    
+    // condition regarding post-filtering what to export
+    if (do_post_filtering == 'yes') {
+      var final_img = postFiltered
+    }
+    
+    if (do_post_filtering == 'no') {
+      var final_img = binaryCluster
+    }
+    
+    return final_img.set('system:index',img.get('system:index'));
   };
   
   
@@ -1068,18 +1080,30 @@ var vis = {bands: ['B4', 'B3', 'B2'], max: 2000, gamma: 1.5};
 var filtered = dates.map(fun);
 print(filtered);
 
+// Add validation to the map
 Map.addLayer(ee.Image(ee.List(filtered.get(0))), {}, 'Burned Area based on Sentinel-2 dNBR index');
 
+// create binary validation map
 var validation = ee.Image(ee.List(filtered.get(0))).gt(0).unmask();
 
 
 // updated image with majority filter where patch size is small
 var postFilteredValidation = postFilter(validation);
 
-var finalImage = postFilteredValidation;
+// condition regarding post-filtering what to export
+if (do_post_filtering == 'yes') {
+  var final_dNBR_img = postFilteredValidation
+}
 
+if (do_post_filtering == 'no') {
+  var final_dNBR_img = validation
+}
+
+// set the final image
+var finalImage = final_dNBR_img;
+
+// add dNBR to speckleTuning
 var S1_S2 = oneImage.addBands(finalImage.rename('S2_DNBR'));
-
 
 
 // Export images for accuracy assessment
