@@ -1068,7 +1068,7 @@ var vis = {bands: ['B4', 'B3', 'B2'], max: 2000, gamma: 1.5};
 var filtered = dates.map(fun);
 print(filtered);
 
-Map.addLayer(ee.Image(ee.List(filtered.get(0))));
+Map.addLayer(ee.Image(ee.List(filtered.get(0))), {}, 'Burned Area based on Sentinel-2 dNBR index');
 
 var validation = ee.Image(ee.List(filtered.get(0))).gt(0).unmask();
 
@@ -1077,7 +1077,6 @@ var validation = ee.Image(ee.List(filtered.get(0))).gt(0).unmask();
 var postFilteredValidation = postFilter(validation);
 
 var finalImage = postFilteredValidation;
-Map.addLayer(finalImage.clip(geometry.buffer(-200)), {},'DNBR');
 
 var S1_S2 = oneImage.addBands(finalImage.rename('S2_DNBR'));
 
