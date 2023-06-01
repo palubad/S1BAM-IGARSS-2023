@@ -18,16 +18,16 @@ var geometry8 =
 var Oly_geometry = geometry9,
     evia_geometry = geometry8;
 
-var athens = athens_geometry;
+// var athens = athens_geometry;
 var evia = evia_geometry;
 var olympia = Oly_geometry;
-var athens2 = ee.FeatureCollection('users/danielp/S1BAM_selected_geometry_athens2').first().geometry();
+var athens = ee.FeatureCollection('users/danielp/S1BAM_selected_geometry_athens2').first().geometry();
 
 //*******************************************************************************************
 //                            SELECT AN AREA OF INTEREST AND REFENCE POINT
 
 // Set your selected area as geometry
-var geometry = athens2;
+var geometry = athens;
 
 // Set the CRS in EPSG
 var crs = 'EPSG:32634';
@@ -71,6 +71,11 @@ var startDate = '2021-01-01';
 // athens2 -- selected = 08-24, start = 08-16, end = 08-25
 // others -- start = 08-03, end = 08-19
 // selected olympia = 08-17, evia = 08-18, athens = 08-13
+
+// calculations
+var connected = ee.Number(5).multiply(10000).divide(400);
+var focalSize = ee.Number(5).multiply(10000).multiply(2).pow(0.5).divide(2);
+print(connected,focalSize)
 
   // Post Filter Settings
   var connected = 25,
@@ -161,8 +166,8 @@ var SpeckleTuning = function(speckle_filter){
   
   
   var filter = 150
-  // var kaki = filter.map(function(filter) {
-  var kaki = KERNEL_SIZE.map(function(KERNEL_SIZE) {
+  // var results = filter.map(function(filter) {
+  var results = KERNEL_SIZE.map(function(KERNEL_SIZE) {
     
     
   // KERNEL_SIZE = ee.Number.parse(KERNEL_SIZE);
@@ -669,13 +674,10 @@ var unsup_results = classification(selected_image);
 // print('result',unsup_results);
 
 
-
-// print(ee.String(speckle_filter).cat(ee.String(ee.Number(KERNEL_SIZE).format())),'kakatest')
-
 return unsup_results.eq(0).unmask().rename(ee.String(speckle_filter).cat(ee.String('_postFilter_')).cat(ee.String(ee.Number(filter).format())))
 
 })
-return kaki
+return results
 }
 
 var final = speckleList.map(SpeckleTuning);
@@ -705,14 +707,11 @@ var area = geometry
 //                            SELECTING THE TILE OF INTEREST
 if (area == evia) {
   var tile = ['34SFJ','34SGJ', '34SGH'];
-} 
-if (area == athens) {
-  var tile = ['34SGH'];
-} 
+}
 if (area == olympia) {
   var tile = ['34SEG'];
 } 
-if (area == athens2) {
+if (area == athens) {
   var tile = ['34SFH','34SGH'];
 } 
 
@@ -962,20 +961,7 @@ var waterMask = JRC.select('occurrence').gt(10).unmask().eq(0);
   
   //----------------------- Mosaic and clip images to study area -----------------------------
   
-  if (area == evia) {
-    
-    var pre_mos = prefireImCol.mosaic().clip(area);
-    var post_mos = postfireImCol.mosaic().clip(area);
-    var pre_cm_mos = prefire_CM_ImCol.mosaic().clip(area);
-    var post_cm_mos = postfire_CM_ImCol.mosaic().clip(area);
-  } else {
-    var pre_mos = prefireImCol.first().clip(area);
-    var post_mos = postfireImCol.first().clip(area);
-    var pre_cm_mos = prefire_CM_ImCol.first().clip(area);
-    var post_cm_mos = postfire_CM_ImCol.first().clip(area);
-  }
-  
-    if (area == athens2) {
+  if (area == evia || area == athens) {
     
     var pre_mos = prefireImCol.mosaic().clip(area);
     var post_mos = postfireImCol.mosaic().clip(area);
@@ -1082,8 +1068,8 @@ Map.addLayer(finalImage.clip(geometry.buffer(-200)), {},'DNBR')
 var S1_S2 = oneImage.addBands(finalImage.rename('S2_DNBR'))
 
 Export.image.toDrive({image: ee.Image(S1_S2).updateMask(waterMask).clip(geometry.buffer(-200)).toFloat(), 
-                      description: "kukukaka_test", 
-                      folder: 'kukukaka',
+                      description: "SpeckleTuningTests", 
+                      folder: 'SpeckleTuningTests',
                       region: geometry,
                       scale: 20,
                       crs: crs,
