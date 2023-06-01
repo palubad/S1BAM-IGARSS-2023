@@ -25,7 +25,7 @@ var post_filter_size = 2;
 var crs = 'EPSG:32634';
 
 // Select polarization filter [String]
-// available options: 'ALL', 'VH', 'VV'
+// available options: 'ALL' (using both VV and VH polarizations), 'VH' (use only VH), 'VV' (use only VV)
 var pol_filter = 'VH';
 
 
@@ -127,7 +127,8 @@ if (geometry == 'evia') {
 print(geometry)
 Map.addLayer(athens, {}, 'Selected geometry');
 
-// calculations
+// calculations for the post-classification filter
+// FocalSize = radius of the 2x Minimap Mapping Unit (post_filter_size) area 
 var connected = ee.Number(post_filter_size).multiply(10000).divide(400);
 var focalSize = ee.Number(post_filter_size).multiply(10000).multiply(2).pow(0.5).divide(2);
 var unit = "meters";
@@ -169,7 +170,7 @@ Map.centerObject(geometry, 11);
 
 Map.addLayer(ee.ImageCollection("COPERNICUS/S2_SR")
 .filterBounds(geometry)
-.filterDate(fireStartDate,fireEndDate).sort('system:time_start',false).first(), 
+.filterDate(postfire_start,ee.Date(postfire_start).advance(1,'day')).sort('system:time_start',false).mosaic(), 
 {min:0, max:3000, bands:['B12','B11', 'B8']}, 
 'S-2 Atmospheric penetration composite [B12-B11-B9]')
 
@@ -764,9 +765,8 @@ var ImCol = 'COPERNICUS/S2_SR';
 
 Map.addLayer(ee.ImageCollection("COPERNICUS/S2_SR")
 .filterBounds(area)
-.filterDate(postfire_start,postfire_end).first(), 
-{min:0, max:3000, bands:['B4','B3', 'B2']}, 
-'sa')
+.filterDate(postfire_start,ee.Date(postfire_start).advance(1,'day')).mosaic(), 
+            {min:0, max:3000, bands:['B4','B3', 'B2']}, 'Sentinel-2 RGB')
 
 
 //*******************************************************************************************
@@ -977,10 +977,6 @@ var waterMask = JRC.select('occurrence').gt(10).unmask().eq(0);
   var first_date_post = ee.String(first_post.get('system:index')).slice(0, 8)
   var first_post_date = ee.Date.parse('YYYYMMdd', first_date_post);
   var postfireImCol = postfireImCol.filter(ee.Filter.date(first_post_date, first_post_date.advance(1,'days')));
-
-  
-  //var prefire_CM_ImCol = prefireImCol.map(maskS2sr);
-  //var postfire_CM_ImCol = postfireImCol.map(maskS2sr);
   
   var prefire_CM_ImCol = prefireImCol
   var postfire_CM_ImCol = postfireImCol
@@ -1057,20 +1053,20 @@ var waterMask = JRC.select('occurrence').gt(10).unmask().eq(0);
 //==========================================================================================
 //               STORE THE FINAL PRODUCTS IN A LIST AND EXPORT THEM 
  
-  var stringa = ee.String(last_pre_date.format('YYYYMMdd')).cat('_').cat(ee.String(startina.format('YYYYMMdd')))
-  burnt_area = burnt_area.set('id',stringa)
-  burnt_area = burnt_area.set('id1',ee.String(startina.format('YYYY-MM-dd')))
-  burnt_area = burnt_area.set('id2',ee.String(dates.get(-1)))
+  var stringa = ee.String(last_pre_date.format('YYYYMMdd')).cat('_').cat(ee.String(startina.format('YYYYMMdd')));
+  burnt_area = burnt_area.set('id',stringa);
+  burnt_area = burnt_area.set('id1',ee.String(startina.format('YYYY-MM-dd')));
+  burnt_area = burnt_area.set('id2',ee.String(dates.get(-1)));
   
-  var ba = ee.Image(burnt_area)
+  var ba = ee.Image(burnt_area);
 
   // change to dNBR to get all dNBR values not only the mask
-  return burnt_area
-  }
+  return burnt_area;
+  };
 
 var vis = {bands: ['B4', 'B3', 'B2'], max: 2000, gamma: 1.5};
 var filtered = dates.map(fun);
-print(filtered)
+print(filtered);
 
 Map.addLayer(ee.Image(ee.List(filtered.get(0))));
 
@@ -1078,13 +1074,16 @@ var validation = ee.Image(ee.List(filtered.get(0))).gt(0).unmask();
 
 
 // updated image with majority filter where patch size is small
-var final2 = postFilter(validation);
+var postFilteredValidation = postFilter(validation);
 
-var finalImage = validation;
+var finalImage = postFilteredValidation;
 Map.addLayer(finalImage.clip(geometry.buffer(-200)), {},'DNBR');
 
 var S1_S2 = oneImage.addBands(finalImage.rename('S2_DNBR'));
 
+
+
+// Export images for accuracy assessment
 Export.image.toDrive({image: ee.Image(S1_S2).updateMask(waterMask).clip(geometry.buffer(-200)).toFloat(), 
                       description: "SpeckleTuningTests", 
                       folder: 'SpeckleTuningTests',
