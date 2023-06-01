@@ -3,5 +3,5 @@ This code repository is an attachment for the IGARSS 2023 proceeding paper: Palu
 
 </b> This repository contains a folder "GEE-codes" where you can find:
   - A JavaScript Google Earth Engine (GEE) code "Time-Series-Analysis.js" 
-  - A JavaScript Google Earth Engine (GEE) code "Speckle-and-Post_filter-Tuning.js" 
-  - A Jupyter notebook with a Python code "Accuracy-Assessment-for-speckle-and-post_filter-tuning.ipynb"  
+  - A JavaScript Google Earth Engine (GEE) code "Speckle-Tuning.js" 
+  - A Jupyter notebook with a Python code "Accuracy-Assessment-for-speckle-tuning.ipynb"  
