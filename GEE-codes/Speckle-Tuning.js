@@ -626,7 +626,7 @@ var imagePreparation = function (img) {
                               // stdDev.select('VV_stdDev').rename('stdDev_VV'),
                               // median.select('VV_median').rename('median_VV'),
                               // kmap_VV.rename('kmap_VV')
-                              diffRatio.rename('diffRFDI')
+                              diffRFDI.rename('diffRFDI')
                               ).updateMask(waterMask);
   
   // select indices to use
