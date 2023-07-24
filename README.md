@@ -1,4 +1,4 @@
-# "Unsupervised Burned Area Mapping in Greece: Investigating the impact of precipitation, pre- and post-processing of Sentinel-1 data in Google Earth Engine" paper presented at [IEEE International Geoscience and Remote Sensing Symposium (IGARSS 2023)](https://2023.ieeeigarss.org/)
+## "Unsupervised Burned Area Mapping in Greece: Investigating the impact of precipitation, pre- and post-processing of Sentinel-1 data in Google Earth Engine" paper presented at [IEEE International Geoscience and Remote Sensing Symposium (IGARSS 2023)](https://2023.ieeeigarss.org/)
 
 ## Paper: 
 [Paluba D. et al. (2023): "Unsupervised Burned Area Mapping in Greece: Investigating the impact of precipitation, pre- and post-processing of Sentinel-1 data in Google Earth Engine"](https://2023.ieeeigarss.org/getManuscript.php?pn=5144) (IGARSS 2023 Login needed, soon it will be published in the IEEE IGARSS proceedings)
